@@ -1,0 +1,6 @@
+topics:
+  nats: "test_nats"
+  kafka: "test_kafka"
+addrs:
+  nats: "127.0.0.1:4222"
+  kafka: "127.0.0.1:9092"
