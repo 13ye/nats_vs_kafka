@@ -6,6 +6,7 @@ import (
 	"time"
 
 	nats "github.com/nats-io/nats.go"
+	stan "github.com/nats-io/stan.go"
 	kafka "gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
@@ -40,6 +41,42 @@ func Test_Producer_Nats(id uint8, addr string, number uint64) {
 
 	utils.Logger.Infof("id[%v] Producer Nats generate msg count[%v] timeStart[%v] timeEnd[%v] timeDiff[%v]", id, number, timeStart.Format("20060102-150405.999999"), timeEnd.Format("20060102-150405.999999"), timeEnd.Sub(timeStart))
 }
+func Test_Producer_Nats_Replay(id uint8, addr string, number uint64) {
+	if addr == "" {
+		addr = nats.DefaultURL
+	}
+	// Connect to a server
+	nc, err := nats.Connect(addr)
+	if err != nil {
+		utils.Logger.Errorln(fmt.Sprintf("Nats Connect Error[%v]", err))
+		panic(fmt.Sprintf("Nats Connect Error[%v]", err))
+	}
+	defer nc.Close()
+
+	sc, err := stan.Connect("test-cluster", "client-p-123", stan.NatsConn(nc))
+	if err != nil {
+		utils.Logger.Errorln(fmt.Sprintf("Nats Connect sc Error[%v]", err))
+		panic(fmt.Sprintf("Nats Connect sc Error[%v]", err))
+	}
+	defer sc.Close()
+
+	timeStart := time.Now()
+
+	ah := func(nuid string, err error) {
+		// process the ack
+	}
+
+	for count := uint64(0); count < number; count++ {
+		guid, err := sc.PublishAsync(utils.Topics["nats"], taskBytesBase64, ah)
+		//err = sc.Publish(utils.Topics["nats"], taskBytesBase64)
+		if err != nil {
+			utils.Logger.Errorln(guid, err)
+		}
+	}
+	timeEnd := time.Now()
+
+	utils.Logger.Infof("id[%v] Producer Nats generate msg count[%v] timeStart[%v] timeEnd[%v] timeDiff[%v]", id, number, timeStart.Format("20060102-150405.999999"), timeEnd.Format("20060102-150405.999999"), timeEnd.Sub(timeStart))
+}
 
 func Test_Consumer_Nats(id uint8, addr string, number uint64) {
 	if addr == "" {
@@ -65,6 +102,43 @@ func Test_Consumer_Nats(id uint8, addr string, number uint64) {
 			stopSig <- false
 		}
 	})
+
+	// wait for receiving msg
+	<-stopSig
+}
+
+func Test_Consumer_Nats_Replay(id uint8, addr string, number uint64) {
+	if addr == "" {
+		addr = nats.DefaultURL
+	}
+	nc, err := nats.Connect(addr)
+	defer nc.Close()
+	if err != nil {
+		utils.Logger.Errorln(fmt.Sprintf("Nats Connect Error[%v]", err))
+		panic(fmt.Sprintf("Nats Connect Error[%v]", err))
+	}
+
+	sc, err := stan.Connect("test-cluster", "client-c-123", stan.NatsConn(nc))
+	defer sc.Close()
+	if err != nil {
+		utils.Logger.Errorln(fmt.Sprintf("Nats Connect sc Error[%v]", err))
+		panic(fmt.Sprintf("Nats Connect sc Error[%v]", err))
+	}
+
+	timeStart := time.Now()
+	stopSig := make(chan bool, 1)
+
+	parseDuration, _ := time.ParseDuration("30m")
+	count := uint64(0)
+	//sc.QueueSubscribe(utils.Topics["nats"], groupId, func(msg *nats.Msg) {
+	sc.Subscribe(utils.Topics["nats"], func(msg *stan.Msg) {
+		count += 1
+		if count == number {
+			timeEnd := time.Now()
+			utils.Logger.Infof("id[%v] ConsumerReplay Nats get msg count[%v] timeStart[%v] timeEnd[%v] timeDiff[%v]", id, number, timeStart.Format("20060102-150405.999999"), timeEnd.Format("20060102-150405.999999"), timeEnd.Sub(timeStart))
+			stopSig <- false
+		}
+	}, stan.StartAtTimeDelta(parseDuration))
 
 	// wait for receiving msg
 	<-stopSig

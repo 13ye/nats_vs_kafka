@@ -17,5 +17,5 @@ sleep 1
 echo "***********************************************"
 echo "****************** KAFKA NOW ******************"
 echo "***********************************************"
-./nats_vs_kafka work -m kafka -t produce -g 4 -c 1000000 &
-./nats_vs_kafka work -m kafka -t consume -g 4 -c 1000000
+./nats_vs_kafka work -m kafka -t produce -g 4 -c 10000000 &
+./nats_vs_kafka work -m kafka -t consume -g 4 -c 10000000
