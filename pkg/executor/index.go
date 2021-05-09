@@ -41,6 +41,7 @@ func Test_Producer_Nats(id uint8, addr string, number uint64) {
 
 	utils.Logger.Infof("id[%v] Producer Nats generate msg count[%v] timeStart[%v] timeEnd[%v] timeDiff[%v]", id, number, timeStart.Format("20060102-150405.999999"), timeEnd.Format("20060102-150405.999999"), timeEnd.Sub(timeStart))
 }
+
 func Test_Producer_Nats_Replay(id uint8, addr string, number uint64) {
 	if addr == "" {
 		addr = nats.DefaultURL
@@ -53,7 +54,7 @@ func Test_Producer_Nats_Replay(id uint8, addr string, number uint64) {
 	}
 	defer nc.Close()
 
-	sc, err := stan.Connect("test-cluster", "client-p-123", stan.NatsConn(nc))
+	sc, err := stan.Connect("test-cluster", "client-p-"+fmt.Sprintf("%v", id), stan.NatsConn(nc))
 	if err != nil {
 		utils.Logger.Errorln(fmt.Sprintf("Nats Connect sc Error[%v]", err))
 		panic(fmt.Sprintf("Nats Connect sc Error[%v]", err))
@@ -118,7 +119,7 @@ func Test_Consumer_Nats_Replay(id uint8, addr string, number uint64) {
 		panic(fmt.Sprintf("Nats Connect Error[%v]", err))
 	}
 
-	sc, err := stan.Connect("test-cluster", "client-c-123", stan.NatsConn(nc))
+	sc, err := stan.Connect("test-cluster", "client-c-"+fmt.Sprintf("%v", id), stan.NatsConn(nc))
 	defer sc.Close()
 	if err != nil {
 		utils.Logger.Errorln(fmt.Sprintf("Nats Connect sc Error[%v]", err))

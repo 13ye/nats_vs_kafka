@@ -46,9 +46,9 @@ var workCmd = &cobra.Command{
 			go func(id uint8) {
 				if middleware == "nats" {
 					if pullput == "produce" {
-						executor.Test_Producer_Nats_Replay(id, utils.Addrs["nats"], count)
+						executor.Test_Producer_Nats(id, utils.Addrs["nats"], count)
 					} else {
-						executor.Test_Consumer_Nats_Replay(id, utils.Addrs["nats"], count/2)
+						executor.Test_Consumer_Nats(id, utils.Addrs["nats"], count/2)
 					}
 				} else {
 					if pullput == "produce" {
